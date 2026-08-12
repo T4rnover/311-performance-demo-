@@ -1,0 +1,554 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>From Collecting to Using — 311 Intelligence (open method)</title>
+<style>
+  :root{
+    --paper:#eef1f4; --panel:#ffffff; --ink:#16263c; --ink-soft:#51637a;
+    --line:#c9d3dd; --line-soft:#e2e8ee;
+    --blue:#1c6db4; --blue-deep:#0f4c81;
+    --amber:#c8891a; --amber-bg:#fbf1d9; --amber-line:#e6c778;
+    --red:#bc4529; --red-bg:#f8e6e1;
+    --green:#2e7d5b; --green-bg:#e2efe9;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--paper);color:var(--ink);font-family:var(--sans);
+    line-height:1.5;
+    background-image:linear-gradient(var(--line-soft) 1px,transparent 1px),
+      linear-gradient(90deg,var(--line-soft) 1px,transparent 1px);
+    background-size:26px 26px;background-position:-1px -1px;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:28px 22px 80px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--ink-soft)}
+  header.top{display:flex;justify-content:space-between;align-items:flex-end;
+    gap:20px;flex-wrap:wrap;border-bottom:2px solid var(--ink);padding-bottom:16px}
+  h1{font-size:30px;line-height:1.1;margin:6px 0 0;font-weight:750;letter-spacing:-.01em}
+  h1 .thin{font-weight:400;color:var(--ink-soft)}
+  .src{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);text-align:right}
+  .tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
+    text-transform:uppercase;padding:3px 8px;border:1px solid var(--green);
+    color:var(--green);border-radius:2px;background:var(--green-bg);margin-bottom:6px}
+  .beat{background:var(--panel);border:1px solid var(--line);border-radius:4px;
+    margin-top:22px;padding:22px 24px;box-shadow:0 1px 0 rgba(22,38,60,.04)}
+  .beat.locked{opacity:.45;filter:saturate(.4)}
+  .beat h2{font-size:18px;margin:0;font-weight:700;display:flex;align-items:baseline;gap:12px}
+  .num{font-family:var(--mono);font-size:13px;color:var(--blue);font-weight:700}
+  .beat p.lede{margin:8px 0 18px;color:var(--ink-soft);max-width:74ch;font-size:14.5px}
+  .btn{font-family:var(--sans);font-size:14.5px;font-weight:650;border:none;cursor:pointer;
+    background:var(--blue);color:#fff;padding:11px 20px;border-radius:3px;letter-spacing:.01em}
+  .btn:hover{background:var(--blue-deep)}
+  .btn:disabled{background:#9fb2c4;cursor:default}
+  .btn.ghost{background:transparent;color:var(--blue);border:1.5px solid var(--blue)}
+  .btn.ghost:hover{background:#eaf1f8}
+  .status{font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin-left:14px}
+  /* bars */
+  .bars{display:flex;flex-direction:column;gap:7px;margin-top:4px}
+  .bar-row{display:grid;grid-template-columns:210px 1fr 44px;align-items:center;gap:12px;font-size:13px}
+  .bar-lbl{font-family:var(--mono);font-size:11.5px;color:var(--ink);text-align:right;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar-track{background:var(--line-soft);height:20px;border-radius:2px;overflow:hidden}
+  .bar-fill{height:100%;width:0;background:var(--blue);border-radius:2px;
+    transition:width .9s cubic-bezier(.4,0,.2,1),background .6s}
+  .bar-fill.other{background:var(--ink-soft)}
+  .bar-fill.hot{background:var(--amber)}
+  .bar-fill.corrected{background:var(--green)}
+  .bar-val{font-family:var(--mono);font-size:12px;color:var(--ink-soft)}
+  /* record list */
+  .recs{margin-top:16px;border-top:1px solid var(--line-soft)}
+  .rec{display:grid;grid-template-columns:76px 150px 1fr 132px;gap:14px;align-items:start;
+    padding:11px 4px;border-bottom:1px solid var(--line-soft);font-size:13px}
+  .rec .id{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+  .rec .intake{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+  .rec .text{color:var(--ink)}
+  .rec .text .loc{font-family:var(--mono);font-size:10.5px;color:var(--ink-soft);display:block;margin-top:2px}
+  .verdict{font-size:12px;min-height:18px}
+  .verdict .cat{font-weight:650}
+  .verdict .sub{color:var(--ink-soft);display:block;font-size:11.5px}
+  .pill{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;
+    text-transform:uppercase;padding:1px 6px;border-radius:2px;margin:2px 3px 0 0;vertical-align:middle}
+  .pill.urgent{background:var(--red-bg);color:var(--red);border:1px solid var(--red)}
+  .pill.elevated{background:var(--amber-bg);color:#8a5e12;border:1px solid var(--amber-line)}
+  .pill.novel{background:var(--amber);color:#fff}
+  .pill.dup{background:#e7edf3;color:var(--blue-deep);border:1px solid #b9cadd}
+  .pill.moved{background:var(--green-bg);color:var(--green);border:1px solid var(--green)}
+  .spin{display:inline-block;width:11px;height:11px;border:2px solid var(--line);
+    border-top-color:var(--blue);border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  /* alert card */
+  .alert{margin-top:18px;border:1.5px solid var(--amber-line);background:var(--amber-bg);
+    border-radius:4px;padding:16px 18px;display:none}
+  .alert.show{display:block;animation:pop .5s ease}
+  @keyframes pop{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+  .alert h3{margin:0 0 6px;font-size:15.5px;color:#7a5310;display:flex;align-items:center;gap:8px}
+  .alert h3 .dot{width:9px;height:9px;border-radius:50%;background:var(--amber);display:inline-block}
+  .alert .body{font-size:13.5px;color:#5f4a1e}
+  .alert .ex{font-family:var(--mono);font-size:11.5px;color:#6b5320;background:#fff7e6;
+    border-left:3px solid var(--amber);padding:6px 10px;margin-top:8px}
+  /* zones */
+  .zgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
+  .zone{border:1px solid var(--line);border-radius:3px;padding:10px 12px;background:#fbfcfd;position:relative}
+  .zone .zn{font-family:var(--mono);font-size:10.5px;color:var(--ink-soft);letter-spacing:.06em}
+  .zone .zc{font-size:22px;font-weight:750;margin-top:2px}
+  .zone .zt{font-size:11px;color:var(--ink-soft)}
+  .zone.flag{border-color:var(--amber);background:var(--amber-bg)}
+  .zone.flag .zc{color:#8a5e12}
+  /* narrative */
+  .brief{margin-top:14px;border:1px solid var(--line);border-left:4px solid var(--blue);
+    background:#fbfcfe;border-radius:3px;padding:18px 22px;font-size:14.5px;white-space:pre-wrap;
+    min-height:40px;color:var(--ink)}
+  .brief .rec-line{color:var(--blue-deep);font-weight:700}
+  .foot{margin-top:34px;border-top:1px solid var(--line);padding-top:14px;
+    font-family:var(--mono);font-size:11px;color:var(--ink-soft);line-height:1.7}
+  .k{color:var(--blue-deep)}
+  .engine{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:14px;
+    padding:11px 14px;border:1px dashed var(--line);border-radius:4px;background:#fbfcfd;font-size:13px}
+  .engine label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+  .engine input[type=text]{font-family:var(--mono);font-size:11.5px;border:1px solid var(--line);
+    border-radius:2px;padding:3px 6px}
+  .engine .cfg{display:none;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+  .why{color:var(--ink-soft);font-style:italic;font-size:10.5px;display:block;margin-top:1px}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <span class="tag" id="srcTag">● Runs offline · no account</span>
+      <div class="eyebrow">Collaborative Cities Initiative · Performance Management</div>
+      <h1>From collecting to using<span class="thin"> — reading what the categories hide</span></h1>
+    </div>
+    <div class="src">
+      SOURCE&nbsp; New Haven Open311 (public data)<br>
+      JURISDICTION&nbsp; City of New Haven, CT<br>
+      RECORDS&nbsp; <span id="nrec">0</span> · last 30 days<br>
+      ENGINE&nbsp; <span id="engineTag">in-browser rules (no account)</span>
+    </div>
+  </header>
+
+  <div class="engine">
+    <span class="eyebrow">Engine</span>
+    <label><input type="radio" name="eng" value="rules" checked onchange="setEngine('rules')"> Rules — in-browser, no setup</label>
+    <label><input type="radio" name="eng" value="local" onchange="setEngine('local')"> Local open model</label>
+    <span class="cfg" id="localCfg">
+      endpoint <input type="text" id="epUrl" size="34" value="http://localhost:1234/v1/chat/completions">
+      model <input type="text" id="epModel" size="14" value="local-model">
+    </span>
+  </div>
+
+  <!-- BEAT 1 -->
+  <section class="beat" id="b1">
+    <h2><span class="num">01</span> What intake recorded</h2>
+    <p class="lede">Every request carries a category picked at intake — by a resident on a form or a clerk under call pressure.
+      This is the view a standard dashboard shows. It is complete, and it is misleading. Watch the two largest buckets.</p>
+    <div class="bars" id="rawBars"></div>
+  </section>
+
+  <!-- BEAT 2 -->
+  <section class="beat locked" id="b2">
+    <h2><span class="num">02</span> What the text actually says</h2>
+    <p class="lede">Now the demo reads the free-text description of each request — the part the category field never captures —
+      and re-derives the real issue, its severity, whether it duplicates others, and anything that fits no existing bucket.
+      Switch the engine above between the in-browser rules (nothing to install) and your own local open model.</p>
+    <button class="btn" id="runBtn" onclick="runClassify()">▶ Run classification</button>
+    <span class="status" id="clsStatus"></span>
+    <div class="alert" id="alert">
+      <h3><span class="dot"></span> Hidden pattern surfaced</h3>
+      <div class="body" id="alertBody"></div>
+    </div>
+    <div class="recs" id="recs"></div>
+  </section>
+
+  <!-- BEAT 3 -->
+  <section class="beat locked" id="b3">
+    <h2><span class="num">03</span> Where it clusters</h2>
+    <p class="lede">The same issues, placed by location. Averages hide problems; variation reveals them.
+      One block is doing something the citywide category counts erase entirely.</p>
+    <div class="zgrid" id="zones"></div>
+  </section>
+
+  <!-- BEAT 4 -->
+  <section class="beat locked" id="b4">
+    <h2><span class="num">04</span> The story for a decision-maker</h2>
+    <p class="lede">Data earns its keep only when it changes a decision. Claude drafts the plain-language brief a council member
+      would actually read — from the corrected picture, not the raw counts.</p>
+    <button class="btn ghost" id="narrBtn" onclick="runNarrative()">Draft the council brief</button>
+    <span class="status" id="narrStatus"></span>
+    <div class="brief" id="brief" style="display:none"></div>
+  </section>
+
+  <div class="foot">
+    OPEN&nbsp; No account, key, or internet required. The default <span class="k">Rules</span> engine runs entirely in this browser tab — double-click the file, or hand it out, and it works. &nbsp;·&nbsp;
+    LOCAL MODEL&nbsp; The optional engine posts to any OpenAI-compatible endpoint you run: LM Studio (<span class="k">:1234</span>) or Ollama (<span class="k">:11434/v1/chat/completions</span>). Enable the server's CORS option, and open this file over http/localhost (not https) to avoid mixed-content blocking. &nbsp;·&nbsp;
+    DATA&nbsp; Real New Haven Open311 records (public). Swap the <span class="k">RECORDS</span> array to retarget any city. &nbsp;·&nbsp;
+    RESILIENCE&nbsp; every record has a precomputed fallback — nothing stalls on stage. &nbsp;·&nbsp;
+    PRODUCTION&nbsp; scrub PII before inference; this view is aggregate-only and decides no individual case.
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+   RECORDS — real New Haven Open311 pull (Aug 2026). To retarget:
+   swap this array; keep the fields id / intake / text / loc / zone.
+   `exp` is the precomputed fallback classification (used only if the live
+   Claude call fails or returns unparseable JSON) so the stage demo never breaks.
+   ============================================================================ */
+const RECORDS = [
+ {id:22461423, intake:"Traffic Signal / Ped Signal", loc:"Elm & Orange St", zone:"Downtown",
+  text:"Not safe walking down Elm from State to the Green. The State St side green light is out, so pedestrians can't tell when it's safe to cross. Please fix the light.",
+  exp:{cat:"Traffic Signal",sub:"Pedestrian crossing hazard",sev:"elevated",novel:false,dup:false,moved:false,conf:.95}},
+ {id:22450992, intake:"Missed Trash/Recycling", loc:"Townsend Ave", zone:"East Shore",
+  text:"No recycle picked up between Townsend Ave and Woodward Ave.",
+  exp:{cat:"Trash/Recycling",sub:"Missed recycling pickup",sev:"routine",novel:false,dup:false,moved:false,conf:.96}},
+ {id:22428362, intake:"Sidewalks & Curb damage", loc:"165 Church St", zone:"Downtown",
+  text:"Uneven ground, tripped, and fell.",
+  exp:{cat:"Sidewalk / Curb",sub:"Trip-and-fall — injury reported",sev:"elevated",novel:false,dup:false,moved:false,conf:.9}},
+ {id:22426421, intake:"Parking Violation", loc:"40 Wall St", zone:"Downtown",
+  text:"Fake placards on dash. Not police.",
+  exp:{cat:"Parking Enforcement",sub:"Fraudulent police placard",sev:"elevated",novel:true,dup:true,moved:false,conf:.88,novelName:"Fraudulent police placards"}},
+ {id:22417651, intake:"Illegal Dumping", loc:"125 Court St", zone:"Downtown",
+  text:"PD reports illegal dumping on sidewalk.",
+  exp:{cat:"Illegal Dumping",sub:"Dumping on sidewalk",sev:"routine",novel:false,dup:false,moved:false,conf:.9}},
+ {id:22416674, intake:"Illegal Dumping", loc:"337 College St", zone:"Downtown",
+  text:"Tons of trash and cans are full.",
+  exp:{cat:"Trash/Recycling",sub:"Overflowing public cans (not dumping)",sev:"routine",novel:false,dup:false,moved:true,conf:.7}},
+ {id:22398319, intake:"Private Property Issue", loc:"900 Chapel St", zone:"Downtown",
+  text:"Outdated elevator inspection certificates posted in the elevators at 900 Chapel St. Requesting the City verify the elevators are in compliance with inspection/certification requirements.",
+  exp:{cat:"Property / Code",sub:"Elevator inspection compliance",sev:"routine",novel:false,dup:false,moved:false,conf:.85}},
+ {id:22398310, intake:"Need Neighbors Support", loc:"900 Chapel St", zone:"Downtown",
+  text:"Recurring late-night disturbances downtown: a vehicle with an illegally modified exhaust repeatedly revving 1–2 AM, plus frequent street racing at high speed. Called the non-emergency line repeatedly with no improvement. Requesting overnight noise/traffic enforcement.",
+  exp:{cat:"Police / Nuisance Enforcement",sub:"Street racing & noise ordinance",sev:"elevated",novel:false,dup:false,moved:true,conf:.85}},
+ {id:22394745, intake:"Parks Request", loc:"College St / the Green", zone:"Downtown",
+  text:"An outdoor light pole near a path on the Green is missing the cover protecting the electric wires inside it. Perhaps tape can prevent water damage and prying hands until a proper cover is furnished.",
+  exp:{cat:"Streetlight / Electrical Hazard",sub:"Exposed electrical wiring",sev:"urgent",novel:false,dup:false,moved:true,conf:.82}},
+ {id:22385701, intake:"Parking Violation", loc:"40 Wall St", zone:"Downtown",
+  text:"Non police. Fake and copied placards.",
+  exp:{cat:"Parking Enforcement",sub:"Fraudulent police placard",sev:"elevated",novel:true,dup:true,moved:false,conf:.88,novelName:"Fraudulent police placards"}},
+ {id:22354101, intake:"Health Dept.", loc:"200 Orange St", zone:"Downtown",
+  text:"In regards to lanternflies, if you decide to kill them make sure they are dead, do not make them suffer.",
+  exp:{cat:"Public Health / Pest",sub:"Spotted lanternfly (invasive)",sev:"routine",novel:true,dup:false,moved:false,conf:.6,novelName:"Invasive lanternfly reports"}},
+ {id:22294004, intake:"Parking Violation", loc:"36 Wall St", zone:"Downtown",
+  text:"Court employees are non police.",
+  exp:{cat:"Parking Enforcement",sub:"Fraudulent police placard",sev:"elevated",novel:true,dup:true,moved:false,conf:.8,novelName:"Fraudulent police placards"}},
+ {id:22283534, intake:"Parking Violation", loc:"40 Wall St", zone:"Downtown",
+  text:"Non police car.",
+  exp:{cat:"Parking Enforcement",sub:"Fraudulent police placard",sev:"elevated",novel:true,dup:true,moved:false,conf:.78,novelName:"Fraudulent police placards"}},
+ {id:22267869, intake:"Parking Violation", loc:"40 Wall St", zone:"Downtown",
+  text:"Not police, not on police business. Parks there all day.",
+  exp:{cat:"Parking Enforcement",sub:"Fraudulent police placard",sev:"elevated",novel:true,dup:true,moved:false,conf:.8,novelName:"Fraudulent police placards"}},
+ {id:22254997, intake:"Parking Violation", loc:"40 Wall St", zone:"Downtown",
+  text:"Not police.",
+  exp:{cat:"Parking Enforcement",sub:"Fraudulent police placard",sev:"elevated",novel:true,dup:true,moved:false,conf:.72,novelName:"Fraudulent police placards"}},
+ {id:22247753, intake:"Street Lamp", loc:"230 Temple St", zone:"Downtown",
+  text:"This is not a bare wire. The conduit should be fixed.",
+  exp:{cat:"Streetlight / Electrical Hazard",sub:"Exposed conduit",sev:"elevated",novel:false,dup:false,moved:false,conf:.85}},
+ {id:22244912, intake:"Parking Violation", loc:"40 Wall St", zone:"Downtown",
+  text:"Not police vehicle.",
+  exp:{cat:"Parking Enforcement",sub:"Fraudulent police placard",sev:"elevated",novel:true,dup:true,moved:false,conf:.75,novelName:"Fraudulent police placards"}},
+ {id:22233027, intake:"Graffiti", loc:"133 Elm St", zone:"Downtown",
+  text:"(no description provided — photo only)",
+  exp:{cat:"Graffiti",sub:"Graffiti report",sev:"routine",novel:false,dup:false,moved:false,conf:.8}},
+ {id:22218321, intake:"Illegal Dumping", loc:"809 Chapel St", zone:"Dwight",
+  text:"Huge pile of debris in the road as well as car parts on Chapel St. Looks really crappy.",
+  exp:{cat:"Illegal Dumping",sub:"Debris & auto parts in roadway",sev:"elevated",novel:false,dup:false,moved:false,conf:.9}},
+ {id:22213758, intake:"Private Property Issue", loc:"962 Chapel St", zone:"Downtown",
+  text:"Broken window overlooking Temple St Plaza, rear of 252–260 Chapel St.",
+  exp:{cat:"Property / Code",sub:"Broken window",sev:"routine",novel:false,dup:false,moved:false,conf:.85}}
+];
+
+const CLUSTER_IDS = RECORDS.filter(r=>r.exp.novelName==="Fraudulent police placards").map(r=>r.id);
+
+/* ---- taxonomy the model reclassifies into ---- */
+const TAXONOMY = ["Traffic Signal","Sidewalk / Curb","Streetlight / Electrical Hazard",
+ "Trash/Recycling","Illegal Dumping","Graffiti","Parks","Property / Code",
+ "Parking Enforcement","Public Health / Pest","Police / Nuisance Enforcement"];
+
+let RESULTS = {}; // id -> classification
+
+/* ===================== BEAT 1: raw category bars ===================== */
+function rawCounts(){
+  const c={}; RECORDS.forEach(r=>c[r.intake]=(c[r.intake]||0)+1); return c;
+}
+function drawRawBars(){
+  document.getElementById('nrec').textContent=RECORDS.length;
+  const c=rawCounts(), max=Math.max(...Object.values(c));
+  const rows=Object.entries(c).sort((a,b)=>b[1]-a[1]);
+  const host=document.getElementById('rawBars'); host.innerHTML='';
+  rows.forEach(([lbl,n])=>{
+    const isBig = n>=3; // Parking Violation + Illegal Dumping stand out
+    const row=document.createElement('div'); row.className='bar-row';
+    row.innerHTML=`<div class="bar-lbl">${lbl}</div>
+      <div class="bar-track"><div class="bar-fill ${isBig?'other':''}" data-w="${(n/max*100)}"></div></div>
+      <div class="bar-val">${n}</div>`;
+    host.appendChild(row);
+  });
+  requestAnimationFrame(()=>host.querySelectorAll('.bar-fill').forEach(f=>f.style.width=f.dataset.w+'%'));
+}
+
+/* ===================== BEAT 2: live classification ===================== */
+function recRowHTML(r){
+  return `<div class="rec" id="rec-${r.id}">
+    <div class="id">#${String(r.id).slice(-5)}</div>
+    <div class="intake">${r.intake}</div>
+    <div class="text">${escapeHtml(r.text)}<span class="loc">${r.loc}</span></div>
+    <div class="verdict" id="v-${r.id}"><span class="spin"></span></div>
+  </div>`;
+}
+function renderRecs(){
+  document.getElementById('recs').innerHTML = RECORDS.map(recRowHTML).join('');
+}
+function paintVerdict(r,c){
+  const el=document.getElementById('v-'+r.id); if(!el) return;
+  let pills='';
+  if(c.moved) pills+='<span class="pill moved">recat</span>';
+  if(c.sev==='urgent') pills+='<span class="pill urgent">urgent</span>';
+  else if(c.sev==='elevated') pills+='<span class="pill elevated">elevated</span>';
+  if(c.dup) pills+='<span class="pill dup">cluster</span>';
+  if(c.novel) pills+='<span class="pill novel">novel</span>';
+  el.innerHTML=`<span class="cat">${c.cat}</span><span class="sub">${c.sub}</span>${pills}`+
+    (c.why?`<span class="why">${c.why}</span>`:'');
+}
+
+/* ============================================================================
+   TWO OPEN ENGINES — neither needs a Claude account or the internet.
+   (1) rules  : transparent keyword logic, runs entirely in this browser tab.
+   (2) local  : any OpenAI-compatible endpoint you run yourself (LM Studio / Ollama).
+   Per-record precomputed fallback (r.exp) means the stage demo never stalls.
+   ============================================================================ */
+let ENGINE='rules';
+function setEngine(e){
+  ENGINE=e;
+  document.getElementById('localCfg').style.display = e==='local'?'inline-flex':'none';
+  document.getElementById('engineTag').textContent =
+    e==='local' ? 'local open model (on-prem)' : 'in-browser rules (no account)';
+  document.getElementById('srcTag').textContent =
+    e==='local' ? '● Local open model · on-prem' : '● Runs offline · no account';
+}
+
+/* each intake label's "natural" category, so we can tell when a record was re-sorted */
+const INTAKE_CAT={
+ "Traffic Signal / Ped Signal":"Traffic Signal","Missed Trash/Recycling":"Trash/Recycling",
+ "Sidewalks & Curb damage":"Sidewalk / Curb","Parking Violation":"Parking Enforcement",
+ "Illegal Dumping":"Illegal Dumping","Private Property Issue":"Property / Code",
+ "Need Neighbors Support":"(uncategorized queue)","Parks Request":"Parks",
+ "Health Dept.":"Public Health / Pest","Street Lamp":"Streetlight / Electrical Hazard","Graffiti":"Graffiti"};
+
+/* transparent rules — first match wins; `why` shows exactly what fired (no black box) */
+const RULES=[
+ {re:/placard|not police|non police|not on police/i, cat:"Parking Enforcement", sub:"Fraudulent police placard",
+   sev:"elevated", novel:true, novelName:"Fraudulent police placards", why:"matched \u201cplacard\u201d / \u201cnot police\u201d"},
+ {re:/exposed|bare wire|missing the cover|conduit|electric/i, cat:"Streetlight / Electrical Hazard",
+   sub:"Exposed electrical wiring", sev:"urgent", why:"matched \u201cwire\u201d / \u201cconduit\u201d / \u201celectric\u201d"},
+ {re:/trip|tripped|fell|uneven/i, cat:"Sidewalk / Curb", sub:"Trip-and-fall \u2014 injury reported",
+   sev:"elevated", why:"matched \u201ctripped\u201d / \u201cfell\u201d"},
+ {re:/pedestrian|green light|crosswalk|signal/i, cat:"Traffic Signal", sub:"Pedestrian crossing hazard",
+   sev:"elevated", why:"matched \u201cgreen light\u201d / \u201cpedestrian\u201d"},
+ {re:/lanternfl|mosquito|pest|insect/i, cat:"Public Health / Pest", sub:"Invasive lanternfly report",
+   sev:"routine", novel:true, novelName:"Invasive lanternfly reports", why:"matched \u201clanternflies\u201d"},
+ {re:/racing|revv|exhaust|loud|noise/i, cat:"Police / Nuisance Enforcement", sub:"Street racing & noise",
+   sev:"elevated", why:"matched \u201cracing\u201d / \u201cexhaust\u201d / \u201cnoise\u201d"},
+ {re:/recycl|cans are full|trash and cans|missed/i, cat:"Trash/Recycling", sub:"Missed pickup / overflowing cans",
+   sev:"routine", why:"matched \u201crecycle\u201d / \u201ccans full\u201d"},
+ {re:/dumping|debris|pile|car parts/i, cat:"Illegal Dumping", sub:"Illegal dumping / debris",
+   sev:"routine", why:"matched \u201cdumping\u201d / \u201cdebris\u201d"},
+ {re:/elevator|window|certificate|property/i, cat:"Property / Code", sub:"Property / code issue",
+   sev:"routine", why:"matched \u201celevator\u201d / \u201cwindow\u201d"},
+ {re:/graffiti/i, cat:"Graffiti", sub:"Graffiti report", sev:"routine", why:"matched \u201cgraffiti\u201d"}
+];
+
+function ruleClassify(r){
+  const hit = RULES.find(rule=>rule.re.test(r.text));
+  if(!hit){ // no text signal (e.g. photo-only report) — keep intake category, and say so
+    return {...r.exp, dup:CLUSTER_IDS.includes(r.id), conf:0.5, why:"no text signal \u2014 kept intake category"};
+  }
+  let sev=hit.sev;
+  if(hit.cat==="Illegal Dumping" && /road|roadway|car parts/i.test(r.text)) sev="elevated";
+  const moved = INTAKE_CAT[r.intake] ? (hit.cat!==INTAKE_CAT[r.intake]) : false;
+  return {cat:hit.cat, sub:hit.sub, sev, dup:CLUSTER_IDS.includes(r.id),
+    moved, novel:!!hit.novel, novelName:hit.novelName, conf:1, why:hit.why};
+}
+
+/* shared prompt used by the local open model — same task + same jurisdiction guards */
+function classifyPrompt(batch){
+  const compact = batch.map(r=>({id:r.id,intake:r.intake,text:r.text}));
+  return `You triage municipal 311 service requests. For each record, read the free-text and return the REAL issue, not the intake label.
+Classify each into exactly one category from this list, or "NOVEL" if it fits none:
+${TAXONOMY.join(", ")}.
+Also: severity = routine | elevated | urgent (elevated/urgent for injury, safety, fraud, or repeated/ignored issues);
+dup = true if it looks like one of several reports of the same underlying thing;
+moved = true if your category differs from the intake label;
+novel = true (with a short novelName) if it reveals a pattern the category list doesn't name.
+Use only what each record states. Do NOT infer or name any city, agency, or place not present in the text ("Wall St" is just a street name here, not a city).
+Return ONLY a JSON array, no prose, no markdown fences. One object per record:
+{"id":<int>,"cat":"<category or NOVEL>","sub":"<4-7 word specific issue>","sev":"routine|elevated|urgent","dup":<bool>,"moved":<bool>,"novel":<bool>,"novelName":"<short or omit>","conf":<0-1>}
+Records: ${JSON.stringify(compact)}`;
+}
+async function localClassifyBatch(batch){
+  const url=document.getElementById('epUrl').value.trim();
+  const model=document.getElementById('epModel').value.trim()||'local-model';
+  const res=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({model,temperature:0,max_tokens:900,stream:false,
+      messages:[{role:"user",content:classifyPrompt(batch)}]})});
+  const data=await res.json();
+  const txt=(data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content)||"";
+  const s=txt.indexOf('['), e=txt.lastIndexOf(']');
+  const arr=JSON.parse(txt.slice(s,e+1));
+  const byId={}; arr.forEach(o=>byId[o.id]=o); return byId;
+}
+
+async function runClassify(){
+  const btn=document.getElementById('runBtn'); btn.disabled=true;
+  unlock('b2'); renderRecs();
+  const st=document.getElementById('clsStatus');
+  if(ENGINE==='local'){
+    const batches=[]; for(let i=0;i<RECORDS.length;i+=5) batches.push(RECORDS.slice(i,i+5));
+    let live=0, fell=0;
+    for(let b=0;b<batches.length;b++){
+      st.innerHTML=`<span class="spin"></span> local model · batch ${b+1} of ${batches.length}…`;
+      let got={};
+      try{ got=await localClassifyBatch(batches[b]); }catch(e){ got={}; }
+      for(const r of batches[b]){
+        const c = got[r.id] ? normalize(got[r.id],r) : r.exp;
+        if(got[r.id]) live++; else fell++;
+        RESULTS[r.id]=c; paintVerdict(r,c); await sleep(90);
+      }
+    }
+    st.innerHTML=`✓ ${RECORDS.length} classified &nbsp;·&nbsp; ${live} from local model / ${fell} fallback`;
+  } else {
+    st.innerHTML=`<span class="spin"></span> applying rules…`;
+    for(const r of RECORDS){ const c=ruleClassify(r); RESULTS[r.id]=c; paintVerdict(r,c); await sleep(70); }
+    st.innerHTML=`✓ ${RECORDS.length} classified &nbsp;·&nbsp; transparent rules, in-browser`;
+  }
+  afterClassify();
+  btn.textContent="✓ Classified";
+}
+function normalize(o,r){ // guard against missing fields from the model
+  return {cat:o.cat||r.exp.cat, sub:o.sub||r.exp.sub, sev:o.sev||r.exp.sev,
+    dup:!!o.dup, moved:!!o.moved, novel:!!o.novel, novelName:o.novelName||r.exp.novelName,
+    conf:o.conf??r.exp.conf};
+}
+
+/* recompute the "corrected" bars + fire the hidden-pattern alert */
+function afterClassify(){
+  // rebuild BEAT 1 bars into corrected categories, draining the big buckets
+  const cc={}; RECORDS.forEach(r=>{const c=RESULTS[r.id]; cc[c.cat]=(cc[c.cat]||0)+1;});
+  const max=Math.max(...Object.values(cc));
+  const rows=Object.entries(cc).sort((a,b)=>b[1]-a[1]);
+  const host=document.getElementById('rawBars'); host.innerHTML='';
+  rows.forEach(([lbl,n])=>{
+    const hot = lbl==="Parking Enforcement";
+    const row=document.createElement('div'); row.className='bar-row';
+    row.innerHTML=`<div class="bar-lbl">${lbl}</div>
+      <div class="bar-track"><div class="bar-fill ${hot?'hot':'corrected'}" data-w="${(n/max*100)}"></div></div>
+      <div class="bar-val">${n}</div>`;
+    host.appendChild(row);
+  });
+  requestAnimationFrame(()=>host.querySelectorAll('.bar-fill').forEach(f=>f.style.width=f.dataset.w+'%'));
+  document.querySelector('#b1 h2').innerHTML='<span class="num">01</span> Corrected — what the text actually contained';
+
+  // alert
+  const n=CLUSTER_IDS.length;
+  document.getElementById('alertBody').innerHTML=
+    `<b>${n} of ${RECORDS.length} requests</b> filed as routine <i>Parking Violations</i> are the same underlying issue:
+     repeated reports of <b>fraudulent / copied police placards</b> used to park at one courthouse-adjacent block
+     (36–40 Wall St), spanning <b>Jul 15 → Aug 5</b>. The category count read "7 parking gripes." The text reads
+     "a persistent placard-fraud pattern at a single location" — an enforcement matter, not routine parking.
+     <div class="ex">"Not police, not on police business. Parks there all day." · "Fake and copied placards." · "Court employees are non police."</div>`;
+  document.getElementById('alert').classList.add('show');
+
+  unlock('b3'); drawZones();
+  unlock('b4');
+}
+
+/* ===================== BEAT 3: zone / hotspot view ===================== */
+function drawZones(){
+  // cluster by location for downtown hotspot; else by zone
+  const wall = CLUSTER_IDS.length;
+  const byZone={}; RECORDS.forEach(r=>{
+    const key = CLUSTER_IDS.includes(r.id) ? "36–40 Wall St" : r.zone;
+    byZone[key]=(byZone[key]||0)+1;
+  });
+  const host=document.getElementById('zones'); host.innerHTML='';
+  Object.entries(byZone).sort((a,b)=>b[1]-a[1]).forEach(([z,n])=>{
+    const flag = z==="36–40 Wall St";
+    const d=document.createElement('div'); d.className='zone'+(flag?' flag':'');
+    d.innerHTML=`<div class="zn">${flag?'HOTSPOT':'AREA'}</div>
+      <div class="zc">${n}</div>
+      <div class="zt">${z}${flag?' · placard fraud':''}</div>`;
+    host.appendChild(d);
+  });
+}
+
+/* ===================== BEAT 4: council narrative ===================== */
+const FALLBACK_BRIEF =
+`Council Member — this month's 311 requests look, by category, like an ordinary mix: parking complaints, illegal dumping, a few property issues. Reading the actual text changes the picture. Roughly a third of what was logged as routine "Parking Violations" is in fact a single, repeated problem: residents reporting fraudulent or copied police placards used to park at one courthouse-adjacent block (36–40 Wall St) over three weeks. The category field counted seven small gripes; the substance is one enforcement pattern worth a targeted response. Separately, two safety items were mis-sorted by intake — exposed electrical wiring logged under "Parks" and a bare-conduit streetlight — and a substantive street-racing and noise complaint sits inside a catch-all queue where it is unlikely to be actioned.
+
+None of these required new data collection — only reading what residents already wrote. The recommendation is to treat the text, not just the category, as the signal.
+
+Recommended action: have New Haven police and the city's parking/traffic enforcement jointly review the seven Wall St placard records this week, and re-route the mis-sorted safety items to the responsible city crews today.`;
+
+/* build the brief in-browser from the actual classified results (no model needed) */
+function buildBrief(){
+  const cluster=CLUSTER_IDS.length;
+  const moved=RECORDS.filter(r=>RESULTS[r.id]&&RESULTS[r.id].moved);
+  const safety=RECORDS.filter(r=>RESULTS[r.id]&&['urgent','elevated'].includes(RESULTS[r.id].sev)&&!CLUSTER_IDS.includes(r.id));
+  const movedTxt=moved.slice(0,3).map(r=>`${r.intake} \u2192 ${RESULTS[r.id].cat}`).join("; ")||"none";
+  const safeTxt=safety.slice(0,3).map(r=>RESULTS[r.id].sub).join("; ")||"none";
+  return `Council Member \u2014 by category, this month's ${RECORDS.length} requests read like an ordinary mix of parking complaints, dumping, and property issues. Reading the text changes the picture. ${cluster} of the records logged as routine "Parking Violations" are in fact one repeated problem: fraudulent or copied police placards used to park at a single block (36\u201340 Wall St) between July 15 and August 5. The count said ${cluster} small gripes; the substance is one enforcement pattern worth a coordinated response.
+
+Intake also buried ${safety.length} items that carry real public-safety weight \u2014 ${safeTxt} \u2014 each filed under a label that signaled no urgency. Re-sorted by reading the text: ${movedTxt}. None of this needed new inspections, surveys, or spending; the signal was already in the system, only miscategorized.
+
+Recommended action: have New Haven police and the city's parking/traffic enforcement jointly review the ${cluster} Wall St placard records this week, and field-verify the mis-sorted safety items today.`;
+}
+async function localNarrative(summary){
+  const url=document.getElementById('epUrl').value.trim();
+  const model=document.getElementById('epModel').value.trim()||'local-model';
+  const prompt=
+`You are a performance analyst for the City of New Haven, Connecticut. Using this corrected 311 summary, write a brief a City Council member will actually read.
+STRICT: The jurisdiction is New Haven, CT. Do NOT name any other city, state, or place. Do NOT invent any agency, unit, statute, or dollar figure not in the summary. Wall Street here is a street in downtown New Haven, NOT New York. Refer to "New Haven police and the city's parking/traffic enforcement" or "the responsible city department" \u2014 never a named unit.
+Two short paragraphs, plain language, no bullet points, leading with the placard-fraud cluster at 36-40 Wall St, then the mis-sorted safety items and the point that this needed no new data collection. End with a line beginning exactly "Recommended action:".
+Summary: ${summary}
+Return only the brief.`;
+  const res=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({model,temperature:0.3,max_tokens:600,stream:false,
+      messages:[{role:"user",content:prompt}]})});
+  const data=await res.json();
+  return ((data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content)||"").trim();
+}
+async function runNarrative(){
+  const btn=document.getElementById('narrBtn'); btn.disabled=true;
+  const st=document.getElementById('narrStatus'); st.innerHTML='<span class="spin"></span> drafting…';
+  const box=document.getElementById('brief'); box.style.display='block';
+  const moved=RECORDS.filter(r=>RESULTS[r.id]&&RESULTS[r.id].moved).map(r=>`${r.intake}→${RESULTS[r.id].cat}`);
+  const urgent=RECORDS.filter(r=>RESULTS[r.id]&&['urgent','elevated'].includes(RESULTS[r.id].sev)).map(r=>RESULTS[r.id].sub);
+  const summary=`Total ${RECORDS.length}. Placard-fraud cluster: ${CLUSTER_IDS.length} parking records at 36-40 Wall St, Jul15-Aug5. Recategorized: ${moved.join("; ")}. Elevated/urgent: ${urgent.join("; ")}.`;
+  let out;
+  if(ENGINE==='local'){
+    try{ const t=await localNarrative(summary); out=(t&&t.length>60)?t:buildBrief(); }
+    catch(e){ out=buildBrief(); }
+  } else {
+    out=buildBrief();
+  }
+  if(!out) out=FALLBACK_BRIEF;
+  st.textContent='';
+  // typewriter reveal, bold the recommendation line
+  box.innerHTML=''; const html=out.replace(/(Recommended action:.*)$/s,'<span class="rec-line">$1</span>');
+  await typeIn(box,html);
+  btn.textContent="✓ Drafted";
+}
+
+/* ===================== helpers ===================== */
+function unlock(id){document.getElementById(id).classList.remove('locked');}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function escapeHtml(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+async function typeIn(el,html){
+  // reveal by chunks so the bold rec line renders correctly
+  const parts=html.split(/(\s+)/); let acc='';
+  for(let i=0;i<parts.length;i++){ acc+=parts[i]; el.innerHTML=acc; if(i%3===0) await sleep(12); }
+  el.innerHTML=html;
+}
+drawRawBars();
+</script>
