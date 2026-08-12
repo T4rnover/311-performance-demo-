@@ -1,0 +1,158 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reading what the categories hide — a 311 performance demo</title>
+<style>
+  :root{
+    --paper:#eef1f4; --panel:#ffffff; --ink:#16263c; --ink-soft:#51637a;
+    --line:#c9d3dd; --line-soft:#e2e8ee;
+    --blue:#1c6db4; --blue-deep:#0f4c81;
+    --amber:#c8891a; --amber-bg:#fbf1d9; --amber-line:#e6c778;
+    --green:#2e7d5b; --green-bg:#e2efe9;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6;
+    background-image:linear-gradient(var(--line-soft) 1px,transparent 1px),
+      linear-gradient(90deg,var(--line-soft) 1px,transparent 1px);
+    background-size:26px 26px;background-position:-1px -1px;}
+  .wrap{max-width:940px;margin:0 auto;padding:30px 22px 90px}
+  a{color:var(--blue-deep)}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+  header.top{border-bottom:2px solid var(--ink);padding-bottom:22px}
+  h1{font-size:34px;line-height:1.08;margin:8px 0 0;font-weight:760;letter-spacing:-.015em}
+  h1 .thin{font-weight:400;color:var(--ink-soft)}
+  .tagline{font-size:16.5px;color:var(--ink-soft);margin:12px 0 0;max-width:70ch}
+  .cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
+  .btn{font-family:var(--sans);font-size:14.5px;font-weight:650;border:none;cursor:pointer;text-decoration:none;
+    background:var(--blue);color:#fff;padding:12px 22px;border-radius:3px;display:inline-block}
+  .btn:hover{background:var(--blue-deep)}
+  .btn.ghost{background:transparent;color:var(--blue-deep);border:1.5px solid var(--blue)}
+  .btn.ghost:hover{background:#eaf1f8}
+  section{margin-top:38px}
+  h2{font-size:20px;font-weight:720;margin:0 0 4px;display:flex;align-items:baseline;gap:11px}
+  h2 .n{font-family:var(--mono);font-size:13px;color:var(--blue);font-weight:700}
+  p{margin:10px 0}
+  .lead{max-width:74ch}
+  .beats{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:16px}
+  .beat{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:15px 17px}
+  .beat .bn{font-family:var(--mono);font-size:12px;color:var(--blue);font-weight:700}
+  .beat h3{font-size:15px;margin:3px 0 4px}
+  .beat p{font-size:13.5px;color:var(--ink-soft);margin:0}
+  .ways{display:flex;flex-direction:column;gap:14px;margin-top:16px}
+  .way{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--blue);
+    border-radius:4px;padding:16px 20px}
+  .way.local{border-left-color:var(--amber)}
+  .way.managed{border-left-color:var(--green)}
+  .way h3{font-size:16px;margin:0 0 2px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .badge{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+    padding:2px 7px;border-radius:2px;background:var(--green-bg);color:var(--green);border:1px solid var(--green)}
+  .badge.dl{background:var(--amber-bg);color:#8a5e12;border-color:var(--amber-line)}
+  .way p{font-size:14px;margin:6px 0 0}
+  .way ol{font-size:14px;margin:8px 0 0;padding-left:20px}
+  .way code,.k{font-family:var(--mono);font-size:12.5px;background:#eef2f6;padding:1px 5px;border-radius:2px}
+  .note{background:var(--amber-bg);border:1px solid var(--amber-line);border-radius:4px;
+    padding:12px 16px;font-size:13.5px;color:#5f4a1e;margin-top:12px}
+  .foot{margin-top:46px;border-top:1px solid var(--line);padding-top:16px;
+    font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);line-height:1.8}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Collaborative Cities Initiative · Performance Management</div>
+    <h1>Reading what the categories hide<span class="thin"> — a live 311 demonstration</span></h1>
+    <p class="tagline">Most performance data dies as something you <em>collect</em>. This shows the step that makes it
+      something you can <em>act on</em>: reading the free-text a resident actually wrote, which the category field
+      throws away — and doing it three ways, including with no account and no internet at all.</p>
+    <div class="cta">
+      <a class="btn" href="demo.html">▶ Launch the demo</a>
+      <a class="btn ghost" href="#run">How to run it</a>
+      <a class="btn ghost" href="https://github.com/YOURUSERNAME/311-performance-demo">View the code</a>
+    </div>
+  </header>
+
+  <section>
+    <h2><span class="n">·</span> What it does</h2>
+    <p class="lead">It takes a month of real 311 service requests — pulled from the public
+      <a href="https://wiki.open311.org/GeoReport_v2/">Open311</a> feed for New Haven, Connecticut — and compares two views.
+      The first is the dashboard everyone already has: a bar chart of the category each request was filed under.
+      The second is what the words say. Reading the descriptions surfaces things the categories bury:
+      <strong>seven requests logged as routine "Parking Violations" turn out to be one repeated problem</strong> —
+      fraudulent police placards used to park at a single downtown block over three weeks — plus a handful of
+      genuine safety items (exposed wiring filed under "Parks," a trip-and-fall, a dead pedestrian signal) that
+      their category labels gave no urgency to. None of it needed new data. The signal was already in the system,
+      just miscategorized in a way that let it age.</p>
+  </section>
+
+  <section>
+    <h2><span class="n">·</span> The four moves</h2>
+    <div class="beats">
+      <div class="beat"><div class="bn">01</div><h3>What intake recorded</h3><p>The category bars a standard dashboard shows — complete, and misleading.</p></div>
+      <div class="beat"><div class="bn">02</div><h3>What the text actually says</h3><p>Re-derive the real issue, severity, duplicates, and anything that fits no bucket.</p></div>
+      <div class="beat"><div class="bn">03</div><h3>Where it clusters</h3><p>Place the corrected issues by location. One block was doing something the citywide counts erased.</p></div>
+      <div class="beat"><div class="bn">04</div><h3>The story for a decision-maker</h3><p>Draft the plain-language brief a council member would actually read — from the corrected picture.</p></div>
+    </div>
+  </section>
+
+  <section id="run">
+    <h2><span class="n">·</span> Three ways to run it</h2>
+    <p class="lead">Same demo, same data — you choose how the reading in move 02 happens.</p>
+    <div class="ways">
+
+      <div class="way">
+        <h3>In your browser <span class="badge">runs here · nothing to install</span></h3>
+        <p>The default engine is transparent keyword logic that runs entirely in the page — no account, no key, no internet.
+          It shows the exact rule that fired for each record, so nothing is hidden. This is the version hosted on this site.</p>
+        <ol>
+          <li>Click <a href="demo.html"><strong>Launch the demo</strong></a>.</li>
+          <li>Press <em>Run classification</em>, then <em>Draft the council brief</em>.</li>
+        </ol>
+      </div>
+
+      <div class="way local">
+        <h3>With your own open model <span class="badge dl">download &amp; run locally</span></h3>
+        <p>Point the demo at an open-weight model you run yourself — <a href="https://lmstudio.ai/">LM Studio</a> or
+          <a href="https://ollama.com/">Ollama</a> — to watch a real LLM do the reading, fully on-prem. No resident data leaves your machine.</p>
+        <ol>
+          <li>Start your model server (LM Studio on <code>:1234</code>, or Ollama on <code>:11434</code>) and enable its <strong>CORS</strong> option.</li>
+          <li><a href="demo.html" download>Download <code>demo.html</code></a> and open it from your own computer (double-click, i.e. <code>file://</code>).</li>
+          <li>Switch the engine toggle to <em>Local open model</em>, confirm the endpoint, and run.</li>
+        </ol>
+        <div class="note"><strong>Why download?</strong> This site is served over <code>https</code>, and browsers block an
+          <code>https</code> page from calling <code>http://localhost</code>. Running the file locally removes that restriction.</div>
+      </div>
+
+      <div class="way managed">
+        <h3>Inside Claude.ai <span class="badge">managed model · no key</span></h3>
+        <p>A second build (<a href="claude-version.html">claude-version.html</a>) runs the reading on Anthropic's hosted model
+          with no API key — but only inside a Claude.ai session, where that call is handled for you. Hosted here it will display
+          but won't classify.</p>
+        <ol>
+          <li>Open a chat at <a href="https://claude.ai">claude.ai</a> and paste the contents of <code>claude-version.html</code> as an artifact.</li>
+          <li>Run it there; the buttons call the model live.</li>
+        </ol>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">·</span> Method &amp; honest caveats</h2>
+    <p class="lead"><strong>Real data.</strong> The records are a live public Open311 pull. To point the demo at another city,
+      swap the <span class="k">RECORDS</span> array near the top of the file and map <span class="k">service_name → intake</span>,
+      <span class="k">description → text</span>. Many small cities have dormant feeds — a useful finding in itself.</p>
+    <p class="lead"><strong>Verify before you cite.</strong> A hosted model in an early draft confidently named the wrong
+      city's police department because it saw "Wall Street." The analysis was right; a proper noun was invented. That is the
+      governance lesson baked into this demo: AI-drafted narrative is a first draft to check, never a citation. Every agency,
+      statute, or figure gets traced to source by a human before it reaches a council packet.</p>
+    <p class="lead"><strong>Aggregate only.</strong> This understands patterns; it decides no individual case. In production,
+      scrub personal information before any model reads the text.</p>
+  </section>
+
+  <div class="foot">
+    BUILT FOR&nbsp; the Collaborative Cities Initiative performance-management workshop · ASU Center for Local Government Education and Innovation<br>
+    DATA&nbsp; City of New Haven, CT — Open311 (public) &nbsp;·&nbsp; STANDARD&nbsp; Open311 GeoReport v2 &nbsp;·&nbsp; LICENSE&nbsp; use and adapt freely
+  </div>
+</div>
